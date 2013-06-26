@@ -1,9 +1,9 @@
 TodoService::Application.routes.draw do
   resources :todos
 
-
   resources :users
 
+  root :to => 'main#index'
 
   # The priority is based upon order of creation:
   # first created -> highest priority.

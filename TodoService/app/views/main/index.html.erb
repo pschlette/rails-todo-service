@@ -1,0 +1,104 @@
+<script type="text/javascript">
+	$(function() {
+		$("#add-item").click(function() {
+			var content = $("#add-item-content").val();
+			var priority = $("#add-item-priority").val();
+
+			createTodo(content, priority);
+
+			// clear out contents of 'add item' form
+			$("#add-item-content").val("");
+			$("#add-item-priority").val("1");
+		});
+	});
+
+	// creates a todo and adds it to the todo list
+	function createTodo(content, priority) {
+		var todoData = { content: newContent, priority: newPriority };
+
+		// create new todo, add to todo list
+		ajaxPost("/todos.json", todoData,
+			function(data) { addTodoToUI(data.id) },
+			function(err) { console.debug(err) });
+	}
+
+	// fetches a todo from the server and adds it to the todo list
+	function addTodoToUI(id) {
+		console.log("adding new todo to list");
+		$.get("todos/" + id, function(data) { $("#todo-list").append(data); });
+	}
+
+	// deletes a todo and removes it from the todo list
+	function deleteTodo(id) {
+		url = "/todos/" + id;
+		data = { id: id };
+		ajaxDelete(url, data, null, null);
+		item = getTodoEltWithId(id);
+		item.remove();
+	}
+
+	function updateTodo(id) {
+		item = getTodoEltWithId(id);
+		content = $(item).find(".content").val();
+		priority = $(item).find(".priority").val();
+		console.log("Updating item #" + id + " with content '" + content + "' and priority of " + priority);
+	}
+
+	function getTodoEltWithId(id) {
+		return $(".todo-item input.id").filter(function() { return $(this).val() === id.toString(); })
+									   .parent();
+	}
+
+	function ajaxPost(url, jsonData, successFn, failureFn) {
+		ajaxHelper("POST", url, jsonData, successFn, failureFn);
+	}
+
+	function ajaxDelete(url, jsonData, successFn, failureFn) {
+		ajaxHelper("DELETE", url, jsonData, successFn, failureFn);
+	}
+
+	function ajaxPut(url, jsonData, successFn, failureFn) {
+		ajaxHelper("PUT", url, jsonData, successFn, failureFn);
+	}
+
+	function ajaxHelper(method, url, jsonData, successFn, failureFn) {
+		$.ajax({
+			type: method,
+			url: url,
+			data: JSON.stringify(jsonData),
+			contentType: "application/json; charset=utf-8",
+			dataType: "json",
+			success: successFn,
+			failure: failureFn
+		});
+	}
+</script>
+
+<div id="login-status">
+	login status bar
+</div>
+
+<hr/>
+
+<h2>Todo list</h2>
+
+<!-- Add todo item -->
+<input type="text" size="40" id="add-item-content"/>
+<select id="add-item-priority">
+	<option value="1">1</option>
+	<option value="2">2</option>
+	<option value="3">3</option>
+	<option value="4">4</option>
+	<option value="5">5</option>
+	<option value="6">6</option>
+	<option value="7">7</option>
+	<option value="8">8</option>
+	<option value="9">9</option>
+	<option value="10">10</option>
+</select>
+<input type="button" value="Add new todo item" id="add-item"/>
+
+<!-- Todo list -->
+<div id="todo-list" style="border: 1px solid black;">
+	<%= render :partial => 'todos/todo', :collection => @current_user.todos %>
+</div>

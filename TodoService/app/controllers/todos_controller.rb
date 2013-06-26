@@ -16,38 +16,25 @@ class TodosController < ApplicationController
     @todo = Todo.find(params[:id])
 
     respond_to do |format|
-      format.html # show.html.erb
+	  format.html { render :partial => "todo", :locals => { :todo => @todo } }
       format.json { render json: @todo }
     end
-  end
-
-  # GET /todos/new
-  # GET /todos/new.json
-  def new
-    @todo = Todo.new
-
-    respond_to do |format|
-      format.html # new.html.erb
-      format.json { render json: @todo }
-    end
-  end
-
-  # GET /todos/1/edit
-  def edit
-    @todo = Todo.find(params[:id])
   end
 
   # POST /todos
   # POST /todos.json
   def create
+	puts "todo content: #{params[:todo][:content]}"
+	puts "todo user: #{params[:todo][:user_id]}"
+	params[:todo][:user_id] = 1;
     @todo = Todo.new(params[:todo])
 
     respond_to do |format|
       if @todo.save
-        format.html { redirect_to @todo, notice: 'Todo was successfully created.' }
+        #format.html { redirect_to @todo, notice: 'Todo was successfully created.' }
         format.json { render json: @todo, status: :created, location: @todo }
       else
-        format.html { render action: "new" }
+        #format.html { render action: "new" }
         format.json { render json: @todo.errors, status: :unprocessable_entity }
       end
     end
@@ -76,7 +63,6 @@ class TodosController < ApplicationController
     @todo.destroy
 
     respond_to do |format|
-      format.html { redirect_to todos_url }
       format.json { head :no_content }
     end
   end
