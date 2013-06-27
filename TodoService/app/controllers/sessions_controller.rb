@@ -1,10 +1,11 @@
 class SessionsController < ApplicationController
+	require 'bcrypt'
 	def create
 		username = params[:name]
 		pass = params[:password]
 
 		@user = User.find_by_name(username)
-		if !@user.nil? && @user.password == pass
+		if !@user.nil? && BCrypt::Password.new(@user.password) == pass
 			session[:current_user_id] = @user.id
 			render :json => { :name => @user.name, :id => @user.id }
 		else

@@ -1,7 +1,9 @@
 class UsersController < ApplicationController
+  require 'bcrypt'
   # POST /users
   # POST /users.json
   def create
+	params[:user][:password] = BCrypt::Password.create(params[:user][:password])
     @user = User.new(params[:user])
 
     respond_to do |format|

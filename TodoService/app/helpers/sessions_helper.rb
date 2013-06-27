@@ -1,4 +1,6 @@
 module SessionsHelper
+	require 'bcrypt'
+
 	def current_user=(user)
 		@current_user = user
 	end
@@ -12,7 +14,7 @@ module SessionsHelper
 			username = params[:username]
 			pass = params[:password]
 			user = User.find_by_name(username)
-			@current_user = user if user && user.password == pass
+			@current_user = user if user && BCrypt::Password.new(user.password) == pass
 		end
 
 		return @current_user
