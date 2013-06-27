@@ -1,7 +1,7 @@
 TodoService::Application.routes.draw do
   resources :todos
-
   resources :users
+  resources :sessions, only: [:create, :destroy]
 
   root :to => 'main#index'
 

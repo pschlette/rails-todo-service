@@ -1,3 +1,4 @@
+<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
 <script type="text/javascript">
 	$(function() {
 		$("#add-item").click(function() {
@@ -10,7 +11,29 @@
 			$("#add-item-content").val("");
 			$("#add-item-priority").val("1");
 		});
+
+		$("#sort-asc").click(function() { sortTodos("asc"); });
+		$("#sort-desc").click(function() { sortTodos("desc"); });
+
+		sortTodos("asc");
 	});
+
+	function sortTodos(direction) {
+		todos = $(".todo-item");
+
+		function getTodoPriority(todo) { return $(todo).find(".priority").val(); }
+
+		for (var i = 1; i <= 10; i++) {
+			var filteredTodos = todos.filter(function() { return getTodoPriority(this) == i.toString(); });
+			filteredTodos.each(function() {
+					$(this).detach();
+					if (direction != "desc")
+						$("#todo-list").append(this);
+					else
+						$("#todo-list").prepend(this);
+				});
+		}
+	}
 
 	// creates a todo and adds it to the todo list
 	function createTodo(content, priority) {
@@ -42,6 +65,11 @@
 		content = $(item).find(".content").val();
 		priority = $(item).find(".priority").val();
 		console.log("Updating item #" + id + " with content '" + content + "' and priority of " + priority);
+
+		var updateData = { content: content, priority: priority };
+		var updateUrl = "/todos/" + id;
+		ajaxPut(updateUrl, updateData, null,
+				function(err) { alert("An error occurred while updating the todo."); } ); 
 	}
 
 	function getTodoEltWithId(id) {
@@ -74,8 +102,17 @@
 	}
 </script>
 
+<div id="registration-form">
+	<label for="reg-username">Username:</label>
+	<input type="text" id="reg-username" /><br/>
+	<label for="reg-password">Password:</label>
+	<input type="password" id="reg-password" /> <br/>
+	<label for="reg-password-repeat">Re-type password:</label>
+	<input type="password" id="reg-password-repeat" /><br/>
+	<input type="button" value="Register" />
+</div>
+
 <div id="login-status">
-	login status bar
 </div>
 
 <hr/>
@@ -97,7 +134,9 @@
 	<option value="10">10</option>
 </select>
 <input type="button" value="Add new todo item" id="add-item"/>
-
+<br />
+<input type="button" value="Sort ascending" id="sort-asc" />
+<input type="button" value="Sort descending" id="sort-desc" />
 <!-- Todo list -->
 <div id="todo-list" style="border: 1px solid black;">
 	<%= render :partial => 'todos/todo', :collection => @current_user.todos %>
