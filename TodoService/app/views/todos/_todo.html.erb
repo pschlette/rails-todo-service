@@ -1,7 +1,7 @@
 <div class="todo-item">
 	<input type="hidden" value="<%= todo.id %>" class="id"/>
 	<input type="text" size="40" value="<%= todo.content %>"/ class="content">
-	<select id="add-item-priority" selected="<%= todo.priority %>" class="priority">
+	<select class="priority">
 	<% (1..10).each do |i| %>
 		<option value="<%=i%>" <% if todo.priority == i %>selected<% end %>><%=i%></option>
 	<% end %>

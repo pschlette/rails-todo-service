@@ -1,22 +1,113 @@
 <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+<link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/themes/ui-lightness/jquery-ui.min.css">
 <script type="text/javascript">
+	// set up click handlers, sort todos by priority, other init
 	$(function() {
-		$("#add-item").click(function() {
-			var content = $("#add-item-content").val();
-			var priority = $("#add-item-priority").val();
+		<% if @current_user.nil? %>
+			uiLogout();
+		<% else %>
+			uiLogin("<%= @current_user.name %>");
+			sortTodos("asc");
+		<% end %>
 
-			createTodo(content, priority);
-
-			// clear out contents of 'add item' form
-			$("#add-item-content").val("");
-			$("#add-item-priority").val("1");
-		});
+		$("#add-item").click(function() { addItem(); });
+		$("#submit-reg").click(function() { submitRegistration(); });
+		$("#submit-login").click(function() { submitLogin(); });
+		$("#open-reg").click(function() { $("#registration-form").dialog({ title: "Registration" }); });
+		$("#open-login").click(function() { $("#login-form").dialog({ title: "Log in" }); });
+		$("#logout").click(function() { doLogout(); });
 
 		$("#sort-asc").click(function() { sortTodos("asc"); });
 		$("#sort-desc").click(function() { sortTodos("desc"); });
-
-		sortTodos("asc");
 	});
+
+	function submitRegistration() {
+		var name = $("#reg-username").val();
+		var pass = $("#reg-password").val();
+		var passRepeat = $("#reg-password-repeat").val();
+
+		if (pass != passRepeat) {
+			alert("Oops! The re-typed password doesn't match the original. Please re-enter your registration password and try again.");
+			return;
+		}
+
+		url = "/users";
+		data = { name: name, password: pass };
+		ajaxPost(url, data,
+			function(data) {
+				alert("Registration successful!");
+				$("#registration-form").dialog("close");
+				// clear reg form fields
+				$("#reg-username").val("");
+				$("#reg-password").val("");
+				$("#reg-password-repeat").val("");
+			},
+			function(err) {
+				alert("There was a problem with your registration.");
+			} );
+	}
+
+	function submitLogin() {
+		var name = $("#login-username").val();
+		var pass = $("#login-password").val();
+
+		function processLogin(data) {
+			if (data.error == undefined)
+			{
+				// clean up and close login form
+				$("#login-form").dialog("close");
+				$("#login-username").val("");
+				$("#login-password").val("");
+
+				// load todos
+				$.get("/todos", function(data) { $("#todo-list").html(data); });
+				sortTodos("asc");
+
+				uiLogin(data.name);
+			}
+			else
+				alert(data.error);
+		}
+
+		url = "/signin";
+		data = { name: name, password: pass };
+		ajaxPost(url, data, processLogin, null);
+	}
+
+	function uiLogout() {
+		$("#logged-in-state").hide();
+		$("#logged-out-state").show();
+		$("#todo-list").html("");
+		$("#todo-area-logged-in").hide();
+		$("#todo-area-logged-out").show();
+	}
+
+	function uiLogin(username) {
+		// set name on div w/ welcome message & logout button, show
+		$("#logged-in-state .name").text(username);
+
+		$("#logged-out-state").hide();
+		$("#logged-in-state").show();
+		$("#todo-area-logged-out").hide();
+		$("#todo-area-logged-in").show();
+	}
+
+
+	function doLogout() {
+		function processLogout(data) { uiLogout(); }
+		ajaxDelete("/signout", {}, processLogout, function(err) { console.debug(err); });
+	}
+
+	function addItem() {
+		var content = $("#add-item-content").val();
+		var priority = $("#add-item-priority").val();
+
+		createTodo(content, priority);
+
+		// clear out contents of 'add item' form
+		$("#add-item-content").val("");
+		$("#add-item-priority").val("1");
+	}
 
 	function sortTodos(direction) {
 		todos = $(".todo-item");
@@ -37,17 +128,19 @@
 
 	// creates a todo and adds it to the todo list
 	function createTodo(content, priority) {
-		var todoData = { content: newContent, priority: newPriority };
+		var todoData = { content: content, priority: priority };
 
 		// create new todo, add to todo list
 		ajaxPost("/todos.json", todoData,
-			function(data) { addTodoToUI(data.id) },
-			function(err) { console.debug(err) });
+			function(data) {
+			if (data.id != undefined)
+				addTodoToUI(data.id);
+			},
+			function(err) { console.debug(err); });
 	}
 
 	// fetches a todo from the server and adds it to the todo list
 	function addTodoToUI(id) {
-		console.log("adding new todo to list");
 		$.get("todos/" + id, function(data) { $("#todo-list").append(data); });
 	}
 
@@ -102,23 +195,55 @@
 	}
 </script>
 
-<div id="registration-form">
-	<label for="reg-username">Username:</label>
-	<input type="text" id="reg-username" /><br/>
-	<label for="reg-password">Password:</label>
-	<input type="password" id="reg-password" /> <br/>
-	<label for="reg-password-repeat">Re-type password:</label>
-	<input type="password" id="reg-password-repeat" /><br/>
-	<input type="button" value="Register" />
+<div id="dialogs" style="display: none;">
+	<div id="registration-form">
+		<label for="reg-username">Username:</label>
+		<input type="text" id="reg-username" /><br/>
+		<label for="reg-password">Password:</label>
+		<input type="password" id="reg-password" /> <br/>
+		<label for="reg-password-repeat">Re-type password:</label>
+		<input type="password" id="reg-password-repeat" /><br/>
+		<input type="button" value="Register" id="submit-reg" />
+	</div>
+
+	<div id="login-form">
+		<label for="login-username">Username:</label>
+		<input type="text" id="login-username" /><br/>
+		<label for="login-password">Password:</label>
+		<input type="password" id="login-password" /><br/>
+		<input type="button" value="Log in" id="submit-login" />
+	</div>
 </div>
 
 <div id="login-status">
+	<div id="logged-out-state">
+		<input type="button" value="Register" id="open-reg" />
+		<input type="button" value="Log in" id="open-login" />
+	</div>
+	<div id="logged-in-state">
+		<p>Welcome, <span class="name" style="font-weight: bold;"><%= @current_user.nil? ? "" : @current_user.name %></span>!
+		<input type="button" value="Log out" id="logout" />
+		</p>
+	</div>
 </div>
 
 <hr/>
 
 <h2>Todo list</h2>
 
+<div id="todo-area-logged-out">
+	Log in to view your todo list!
+</div>
+<div id="todo-area-logged-in">
+<input type="button" value="Sort ascending" id="sort-asc" />
+<input type="button" value="Sort descending" id="sort-desc" />
+<!-- Todo list -->
+<div id="todo-list">
+	<% if !@current_user.nil? %>
+		<%= render :partial => 'todos/todo', :collection => @current_user.todos %>
+	<% end %>
+</div>
+<br />
 <!-- Add todo item -->
 <input type="text" size="40" id="add-item-content"/>
 <select id="add-item-priority">
@@ -134,10 +259,4 @@
 	<option value="10">10</option>
 </select>
 <input type="button" value="Add new todo item" id="add-item"/>
-<br />
-<input type="button" value="Sort ascending" id="sort-asc" />
-<input type="button" value="Sort descending" id="sort-desc" />
-<!-- Todo list -->
-<div id="todo-list" style="border: 1px solid black;">
-	<%= render :partial => 'todos/todo', :collection => @current_user.todos %>
 </div>

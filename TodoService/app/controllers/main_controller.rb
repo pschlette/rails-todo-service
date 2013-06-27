@@ -1,5 +1,7 @@
 class MainController < ApplicationController
+	include SessionsHelper
+
 	def index
-		@current_user = User.first
+		@current_user = current_user
 	end
 end

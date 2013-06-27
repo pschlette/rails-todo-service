@@ -1,13 +1,13 @@
 class TodosController < ApplicationController
-  # GET /todos
-  # GET /todos.json
-  def index
-    @todos = Todo.all
+  include SessionsHelper
+  before_filter :signed_in_user
 
-    respond_to do |format|
-      format.html # index.html.erb
-      format.json { render json: @todos }
-    end
+  def index
+	  todos = current_user.todos
+	  respond_to do |format|
+		  format.html { render :partial => 'todo', :collection => todos }
+		  format.json { render :json => todos }
+	  end
   end
 
   # GET /todos/1
@@ -15,18 +15,21 @@ class TodosController < ApplicationController
   def show
     @todo = Todo.find(params[:id])
 
-    respond_to do |format|
-	  format.html { render :partial => "todo", :locals => { :todo => @todo } }
-      format.json { render json: @todo }
-    end
+	# make sure the current user owns this todo
+	if @todo.user.id != current_user.id
+		render :json => { :error => "You don't have access to this item." }
+	else
+		respond_to do |format|
+		  format.html { render :partial => "todo", :locals => { :todo => @todo } }
+		  format.json { render json: @todo }
+		end
+	end
   end
 
   # POST /todos
   # POST /todos.json
   def create
-	puts "todo content: #{params[:todo][:content]}"
-	puts "todo user: #{params[:todo][:user_id]}"
-	params[:todo][:user_id] = 1;
+	params[:todo][:user_id] = current_user.id
     @todo = Todo.new(params[:todo])
 
     respond_to do |format|
@@ -45,6 +48,10 @@ class TodosController < ApplicationController
   def update
     @todo = Todo.find(params[:id])
 
+	if @todo.user.id != current_user.id
+		render :json => { :error => "You don't have access to this item." }
+	end
+
     respond_to do |format|
       if @todo.update_attributes(params[:todo])
         format.html { redirect_to @todo, notice: 'Todo was successfully updated.' }
@@ -60,10 +67,19 @@ class TodosController < ApplicationController
   # DELETE /todos/1.json
   def destroy
     @todo = Todo.find(params[:id])
+
+	if @todo.user.id != current_user.id
+		render :json => { :error => "You don't have access to this item." }
+	end
+
     @todo.destroy
 
     respond_to do |format|
       format.json { head :no_content }
     end
+  end
+
+  def signed_in_user
+	  render :json => { :error => "Unauthorized" } if current_user.nil?
   end
 end
